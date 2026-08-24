@@ -19,19 +19,95 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Flutter Engine
-        uses: subosito/flutter-action@v2
-        with:
-          channel: 'stable'
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
-      - name: Build APK File
+      - name: Create Native Android App
         run: |
-          flutter create drop_app
+          mkdir -p drop_app/app/src/main/res/layout
+          mkdir -p drop_app/app/src/main/java/com/drop/app
+          
+          # Root build.gradle
+          cat << 'EOF' > drop_app/build.gradle
+          buildscript {
+              repositories { google(); mavenCentral() }
+              dependencies { classpath 'com.android.tools.build:gradle:8.1.0' }
+          }
+          allprojects {
+              repositories { google(); mavenCentral() }
+          }
+          EOF
+
+          # App build.gradle
+          cat << 'EOF' > drop_app/app/build.gradle
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.drop.app'
+              compileSdk 33
+              defaultConfig {
+                  applicationId "com.drop.app"
+                  minSdk 21
+                  targetSdk 33
+                  versionCode 1
+                  versionName "1.0"
+              }
+              compileOptions {
+                  sourceCompatibility JavaVersion.VERSION_17
+                  targetCompatibility JavaVersion.VERSION_17
+              }
+          }
+          EOF
+
+          # Manifest
+          cat << 'EOF' > drop_app/app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <application android:label="DROP" android:theme="@android:style/Theme.Material.NoActionBar">
+                  <activity android:name=".MainActivity" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # MainActivity
+          cat << 'EOF' > drop_app/app/src/main/java/com/drop/app/MainActivity.java
+          package com.drop.app;
+          import android.app.Activity;
+          import android.os.Bundle;
+          import android.widget.TextView;
+          import android.graphics.Color;
+          import android.view.Gravity;
+
+          public class MainActivity extends Activity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  TextView tv = new TextView(this);
+                  tv.setText("Welcome to DROP!");
+                  tv.setTextSize(24);
+                  tv.setTextColor(Color.WHITE);
+                  tv.setGravity(Gravity.CENTER);
+                  tv.setBackgroundColor(Color.parseColor("#0F0F11"));
+                  setContentView(tv);
+              }
+          }
+          EOF
+
+          # Settings.gradle
+          echo "include ':app'" > drop_app/settings.gradle
+
+          # Gradle Wrapper Setup
           cd drop_app
-          flutter build apk --release --no-tree-shake-icons
+          gradle wrapper
+          ./gradlew assembleRelease
 
       - name: Upload APK File
         uses: actions/upload-artifact@v4
         with:
           name: DROP-App-Release
-          path: drop_app/build/app/outputs/flutter-apk/app-release.apk
+          path: drop_app/app/build/outputs/apk/release/app-release-unsigned.apk
