@@ -1,6 +1,8 @@
 name: Build DROP App APK
 
 on:
+  push:
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
