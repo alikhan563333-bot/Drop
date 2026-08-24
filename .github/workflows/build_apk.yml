@@ -1,0 +1,112 @@
+name: Build DROP App APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter Engine
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'
+
+      - name: Generate Starter Social Project
+        run: |
+          flutter create drop_app --org com.drop.social
+          cd drop_app
+          cat << 'EOF' > lib/main.dart
+          import 'package:flutter/material.dart';
+
+          void main() => runApp(const DropApp());
+
+          class DropApp extends StatelessWidget {
+            const DropApp({super.key});
+
+            @override
+            Widget build(BuildContext context) {
+              return MaterialApp(
+                title: 'DROP',
+                debugShowCheckedModeBanner: false,
+                theme: ThemeData.dark().copyWith(
+                  scaffoldBackgroundColor: const Color(0xFF0F0F11),
+                  primaryColor: const Color(0xFF7C3AED),
+                ),
+                home: const HomeScreen(),
+              );
+            }
+          }
+
+          class HomeScreen extends StatelessWidget {
+            const HomeScreen({super.key});
+
+            @override
+            Widget build(BuildContext context) {
+              return Scaffold(
+                appBar: AppBar(
+                  title: const Text('DROP', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24)),
+                  backgroundColor: const Color(0xFF1B1B1F),
+                ),
+                body: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1B1B1F),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: const Color(0xFF7C3AED), width: 1.5),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAlignment.start,
+                          children: [
+                            const Text("TODAY'S DROP", style: TextStyle(color: Color(0xFF7C3AED), fontWeight: FontWeight.bold, fontSize: 12)),
+                            const SizedBox(height: 10),
+                            const Text("If you could travel anywhere tonight, where would you go?", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 15),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF7C3AED),
+                                minimumSize: const Size(double.infinity, 45),
+                                shape: RoundedCornerShape(10),
+                              ),
+                              onPressed: () {},
+                              child: const Text("Answer & Start Friendship", style: TextStyle(color: Colors.white)),
+                            )
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Expanded(
+                        child: Center(
+                          child: Text("Feed will appear here when friends respond!", style: TextStyle(color: Colors.grey)),
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+              );
+            }
+          }
+          EOF
+          flutter build apk --release
+
+      - name: Upload APK File
+        uses: actions/upload-artifact@v3
+        with:
+          name: DROP-App-Release
+          path: drop_app/build/app/outputs/flutter-apk/app-release.apk
