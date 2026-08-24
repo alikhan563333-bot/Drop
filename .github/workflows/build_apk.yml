@@ -16,17 +16,17 @@ jobs:
       - name: Setup Java JDK
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
-          java-version: '17'
+          distribution: 'temurin'
+          java-version: '11'
 
-      - name: Setup Flutter Engine
+      - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.0'
 
-      - name: Generate Starter Social Project
+      - name: Build Android APK
         run: |
-          flutter create drop_app --org com.drop.social
+          flutter create --org com.drop.app drop_app
           cd drop_app
           cat << 'EOF' > lib/main.dart
           import 'package:flutter/material.dart';
@@ -37,7 +37,7 @@ jobs:
             const DropApp({super.key});
 
             @override
-            Widget build(BuildContext context) {
+            Widget build(Widget context) {
               return MaterialApp(
                 title: 'DROP',
                 debugShowCheckedModeBanner: false,
@@ -82,7 +82,6 @@ jobs:
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF7C3AED),
                                 minimumSize: const Size(double.infinity, 45),
-                                shape: RoundedCornerShape(10),
                               ),
                               onPressed: () {},
                               child: const Text("Answer & Start Friendship", style: TextStyle(color: Colors.white)),
@@ -103,7 +102,7 @@ jobs:
             }
           }
           EOF
-          flutter build apk --release
+          flutter build apk --release --no-tree-shake-icons
 
       - name: Upload APK File
         uses: actions/upload-artifact@v4
